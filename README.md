@@ -1,6 +1,6 @@
 About
 -----
-RetardSoundSystem is a simple sound system that wraps the standard Java Sound API.
+RetardSoundSystem (RSS) is a simple sound system that wraps the standard Java Sound API.
 
 Feature
 -----
@@ -22,14 +22,15 @@ https://github.com/vuvk/retard_sound_system/releases
 
 License
 -------
-TinySound is licensed under the Apache 2.0 license.  A copy of the license can
+RSS is licensed under the Apache 2.0 license.  A copy of the license can
 be found in the header of every source file as well as in the LICENSE file.
 
 Audio Formats
 -------------
 RSS stores all sounds as 16-bit, 44.1kHz, 2-channel, linear PCM data
 internally (WAV-files). It makes an effort to play other formats, but will not be able
-to handle all formats (OGG, MP3). 
+to handle all formats (OGG, MP3).
+You need use class `Sound` for wav-files (or `SoundBuffer`), and class `Music` for ogg and mp3 files.
 
 Using
 ---------------
