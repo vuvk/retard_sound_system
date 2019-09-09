@@ -15,7 +15,12 @@
 */
 package com.vuvk.retard_sound_system;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.List;
 import java.util.Random;
 import java.util.Vector;
@@ -27,6 +32,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
+import javax.sound.sampled.UnsupportedAudioFileException;
 
 /**
  *
@@ -169,22 +175,40 @@ public final class SoundSystem {
         return started;
     }   
     
+    static boolean isPlaying(Sound sound) {
+        return (MONO_SOUNDS.contains(sound) || STEREO_SOUNDS.contains(sound));
+    }
+    
     static void playSound(Sound sound) {
-        int channels = sound.getFormat().getChannels();
-        if (channels == 1) {
-            MONO_SOUNDS_FOR_ADD.add(sound);
-        } else if (channels == 2) {
-            STEREO_SOUNDS_FOR_ADD.add(sound);
+        if (sound != null) {        
+            if (isPlaying(sound)) {
+                return;
+            }
+
+            AudioFormat format = sound.getFormat();
+            if (format != null) {
+                int channels = format.getChannels();
+                if (channels == 1) {
+                    MONO_SOUNDS_FOR_ADD.add(sound);
+                } else if (channels == 2) {
+                    STEREO_SOUNDS_FOR_ADD.add(sound);
+                }
+            }
         }
     }
     
     static void stopSound(Sound sound) {
-        int channels = sound.getFormat().getChannels();
-        if (channels == 1) {
-            MONO_SOUNDS_FOR_DELETE.add(sound);
-        } else if (channels == 2) {
-            STEREO_SOUNDS_FOR_DELETE.add(sound);
-        }        
+        if (sound != null) {        
+            AudioFormat format = sound.getFormat();
+            if (format != null) {
+                int channels = format.getChannels();
+                if (channels == 1) {
+                    MONO_SOUNDS_FOR_DELETE.add(sound);
+                } else if (channels == 2) {
+                    STEREO_SOUNDS_FOR_DELETE.add(sound);
+                }        
+            }
+        }
     }
     
     public static AudioFormat getAudioMonoFormat() {
@@ -203,31 +227,53 @@ public final class SoundSystem {
                                BIG_ENDIAN);
     }   
     
-    static AudioInputStream getEncodedAudioInputStream(File file) { 
-        AudioInputStream in = null;
+    static AudioInputStream getEncodedAudioInputStream(InputStream in) {   
         try {
-            in = AudioSystem.getAudioInputStream(file);
-        } catch (Exception ex) {
+            return getEncodedAudioInputStream(AudioSystem.getAudioInputStream(in));
+        } catch (UnsupportedAudioFileException | IOException ex) {
             LOG.log(Level.SEVERE, null, ex);
-            return null;
         }
         
+        return null;
+    }
+    
+    private static AudioInputStream getEncodedAudioInputStream(AudioInputStream in) {   
         if (in != null) {
             try {
                 // получаем формат аудио
                 AudioFormat inFormat = in.getFormat();
-                AudioFormat.Encoding[] enc = AudioSystem.getTargetEncodings(inFormat);
-                if (enc.length == 0) {
-                    System.out.println("Not specified encoders for '" + file.getName() + "'...");
-                    return in;
-                }
-
                 // получаем несжатый формат
-                AudioFormat outFormat = (inFormat.getChannels() == 1) ? getAudioMonoFormat() : getAudioStereoFormat();
-                return AudioSystem.getAudioInputStream(outFormat, in);
+                if (inFormat != null) {
+                    AudioFormat outFormat = (inFormat.getChannels() == 1) ? getAudioMonoFormat() : getAudioStereoFormat();
+                    return AudioSystem.getAudioInputStream(outFormat, in);                    
+                }
             } catch (Exception ex) {
                 LOG.log(Level.SEVERE, null, ex);
             }
+        }
+        
+        return null;        
+    }
+    
+    static AudioInputStream getEncodedAudioInputStream(URL url) {   
+        try {
+            return getEncodedAudioInputStream(AudioSystem.getAudioInputStream(url));
+        } catch (UnsupportedAudioFileException | IOException ex) {
+            LOG.log(Level.SEVERE, null, ex);
+        }
+        
+        return null;
+    }
+    
+    static AudioInputStream getEncodedAudioInputStream(String path) { 
+        return getEncodedAudioInputStream(new File(path));
+    }
+    
+    static AudioInputStream getEncodedAudioInputStream(File file) { 
+        try {
+            return getEncodedAudioInputStream(new BufferedInputStream(new FileInputStream(file)));
+        } catch (IOException ex) {
+            LOG.log(Level.SEVERE, null, ex);
         }
         
         return null;

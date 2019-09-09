@@ -25,3 +25,6 @@ hs_err_pid*
 *.wav
 *.mp3
 *.ogg
+/target/
+
+src/main/resources/

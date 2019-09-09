@@ -1,10 +1,14 @@
 About
 -----
-RetardSoundSystem (RSS) is a simple sound system that wraps the standard Java Sound API.
+RetardSoundSystem is a simple sound system that wraps the standard Java Sound API.
 
-Feature
+Features
 -----
-Mixing several sounds in a separate thread. Intentionally it used old Java 7 standard.
+- Mixing several sounds in a separate thread. 
+- Playing, buffering sounds from file, memory, stream, URL or as resource from jar.
+- Playing music from file, memory, stream, URL or as resource from jar.
+
+Intentionally it used old Java 7 standard.
 
 Demo
 -----

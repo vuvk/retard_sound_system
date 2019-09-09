@@ -15,11 +15,18 @@
 */
 package com.vuvk.retard_sound_system;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 
@@ -27,21 +34,47 @@ import javax.sound.sampled.AudioInputStream;
  * load sound to memory buffer
  * @author vuvk
  */
-public class SoundBuffer {
+public final class SoundBuffer {
+    private static final Logger LOG = Logger.getLogger(SoundBuffer.class.getName());    
+    
     private AudioFormat format;
     private byte[] buffer;
     
     public SoundBuffer(String path) {
-        this(new File(path));
+        try {
+            load(new BufferedInputStream(new FileInputStream(new File(path))));
+        } catch (FileNotFoundException ex) {
+            LOG.log(Level.SEVERE, null, ex);
+        }
     }
     
-    public SoundBuffer(File file) {      
-        AudioInputStream stream = SoundSystem.getEncodedAudioInputStream(file);
+    public SoundBuffer(URL url) {
+        try {
+            load(new BufferedInputStream(url.openStream()));
+        } catch (IOException ex) {
+            LOG.log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    public SoundBuffer(File file) {
+        try {
+            load(new BufferedInputStream(new FileInputStream(file)));
+        } catch (FileNotFoundException ex) {
+            LOG.log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    public SoundBuffer(InputStream inputStream) {   
+        load(inputStream);
+    }
+    
+    private void load(InputStream inputStream) {
+        AudioInputStream stream = SoundSystem.getEncodedAudioInputStream(inputStream);
         if (stream != null) {
             try {
                 format = stream.getFormat();
                 
-                List<Byte> buf = new ArrayList<>((int)file.length());
+                List<Byte> buf = new ArrayList<>(inputStream.available());
                 int n;
                 int bufferSize = 0;
                 byte[] readed = new byte[65535];
@@ -56,11 +89,11 @@ public class SoundBuffer {
                 for (n = 0; n < bufferSize; ++n) {
                     buffer[n] = buf.get(n);
                 }
-                buf.clear();                
+                buf.clear();
             } catch (IOException ex) {
-                ex.printStackTrace();
+                LOG.log(Level.SEVERE, null, ex);
             }
-        }
+        } 
     }
     
     public AudioInputStream getAudioInputStream() {

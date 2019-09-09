@@ -20,21 +20,11 @@ package com.vuvk.retard_sound_system;
  * @author vuvk
  */
 import java.io.File;
-import java.io.IOException;
-import java.util.logging.Level;
+import java.net.URL;
 import java.util.logging.Logger;
-import javax.sound.sampled.AudioFormat;
 
-import javax.sound.sampled.AudioInputStream;
-
-public class Sound implements AutoCloseable {  
+public final class Sound extends SoundBasis {  
     private static final Logger LOG = Logger.getLogger(Sound.class.getName());
-    
-    private AudioInputStream stream = null;
-    private File inputFile = null;
-    private boolean playing = false;
-    private boolean looping = false;
-    private double volume = 1.0;
     
     public Sound(SoundBuffer buffer) {
         prepareStream(buffer);
@@ -60,141 +50,26 @@ public class Sound implements AutoCloseable {
         }            
     }
     
-    private void prepareStream(File file) {
-        if (stream != null) {
-            try {
-                stream.close();
-            } catch (IOException ex) {
-                LOG.log(Level.SEVERE, null, ex);
-            }
-        }
-        
-        stream = SoundSystem.getEncodedAudioInputStream(file);
-        inputFile = file;
-        markStream();        
+    public Sound(URL url) {
+        prepareStream(url);
     }
     
-    private void prepareStream(SoundBuffer buffer) {        
-        stream = buffer.getAudioInputStream();
+    private void prepareStream(SoundBuffer buffer) {
+        inputAudioStream = buffer.getAudioInputStream();
         markStream();
-    }
-    
-    private void markStream() {    
-        if (stream != null && stream.markSupported()) {
-            stream.mark(0);
-        }
-    }
-    
-    public AudioFormat getFormat() {
-        if (stream != null) {
-            return stream.getFormat();
-        }
-        
-        return null;
-    }
-    
-    public Sound setVolume(double value) {
-        if (value < 0.0) {
-            value = 0.0;
-        } else if (value > 1.0) {
-            value = 1.0;
-        }
-        volume = value;
-        
-        return this;
-    }
-    
-    public double getVolume() {
-        return volume;
-    }
-	
-    // проигрывается ли звук в данный момент
-    public boolean isPlaying() {
-        return playing;
-    }
+    }    
 
-    /** 
-     * Запуск
-     * @param breakOld определяет поведение, если звук уже играется
-      Если breakOld==true, о звук будет прерван и запущен заново
-      Иначе ничего не произойдёт
-    */
-    public Sound play(boolean breakOld) {                
-        if (stream != null) {
-            if (playing && breakOld) {
-                rewind();
-            }
-            
-            if (!playing) {
-                SoundSystem.playSound(this);
-                playing = true;
-            }
-        } 
-        
+    @Override
+    public Sound play(boolean looping) {
+        super.play(looping);            
+        SoundSystem.playSound(this);           
         return this;
-    }
-	
-    /** 
-     * То же самое, что и play(true)
-     */
-    public Sound play() {
-        return play(true);
-    }
-    
-    public Sound loop() {
-        setLooping(true);
-        return play();
-    }
-    
-    public Sound rewind() {        
-        if (inputFile != null) {
-            prepareStream(inputFile);
-        } else if (stream != null && stream.markSupported()) {
-            try {
-                stream.reset();
-            } catch (IOException ex) {
-                LOG.log(Level.SEVERE, null, ex);
-            }
-        }        
-        
-        return this;
-    }
-	
-    // Останавливает воспроизведение
-    public Sound stop() {
-        SoundSystem.stopSound(this);
-        playing = false;
-        
-        return this;
-    }
-
-    public Sound setLooping(boolean looping) {
-        this.looping = looping;
-        return this;
-    }
-
-    public boolean isLooping() {
-        return looping;
     }
 	
     @Override
-    public void close() {
-        if (stream != null) {
-            try {
-                stream.close();
-            } catch (Exception ex) {
-                LOG.log(Level.SEVERE, null, ex);
-            }
-        }
-    }
-    
-    int read(byte[] buffer) {        
-        try {
-            return stream.read(buffer, 0, buffer.length);            
-        } catch (IOException ex) {
-            LOG.log(Level.SEVERE, null, ex);
-        }
-        
-        return -1;
+    public Sound stop() {
+        SoundSystem.stopSound(this);
+        setPlaying(false);        
+        return this;
     }
 }
