@@ -34,6 +34,7 @@ import javax.sound.sampled.AudioInputStream;
 public abstract class SoundBasis implements AutoCloseable {
     private static final Logger LOG = Logger.getLogger(SoundBasis.class.getName());   
     
+    protected URL inputURL = null;
     protected File inputFile = null;
     protected InputStream inputStream;
     protected AudioInputStream inputAudioStream;
@@ -81,11 +82,13 @@ public abstract class SoundBasis implements AutoCloseable {
         return this;
     }
     
-    int read(byte[] buffer) {        
-        try {
-            return inputAudioStream.read(buffer, 0, buffer.length);            
-        } catch (IOException ex) {
-            LOG.log(Level.SEVERE, null, ex);
+    int read(byte[] buffer) {
+        if (inputAudioStream != null) {
+            try {
+                return inputAudioStream.read(buffer);            
+            } catch (IOException ex) {
+                LOG.log(Level.SEVERE, null, ex);
+            }
         }
         
         return -1;
@@ -96,9 +99,7 @@ public abstract class SoundBasis implements AutoCloseable {
     }
     
     public SoundBasis play(final boolean looping) {
-        if (isPlaying()) {
-            rewind();
-        }        
+        rewind();
         
         setLooping(looping);
         setPlaying(true);
@@ -111,11 +112,13 @@ public abstract class SoundBasis implements AutoCloseable {
     }
     
     
-    public SoundBasis rewind() {        
-        playing = false;
+    public SoundBasis rewind() {    
+        //setPlaying(false);
         
         if (inputFile != null) {
             prepareStream(inputFile);
+        } else if (inputURL != null) {
+            prepareStream(inputURL);
         } else if (inputAudioStream != null && inputAudioStream.markSupported()) {
             try {
                 inputAudioStream.reset();
@@ -128,8 +131,54 @@ public abstract class SoundBasis implements AutoCloseable {
     }
     
     public SoundBasis stop() {
-        looping = false;
-        playing = false;
+        setLooping(false);
+        setPlaying(false);
+        return this;
+    }
+    
+    protected void markStream() {    
+        if (inputAudioStream != null && inputAudioStream.markSupported()) {
+            inputAudioStream.mark(-1);
+        }
+    }
+    
+    /*
+    protected void prepareStream() {
+        rewind();
+    }*/
+    
+    protected void prepareStream(InputStream stream) {
+        inputStream = stream;
+        inputAudioStream = SoundSystem.getEncodedAudioInputStream(stream);
+        markStream();   
+    }
+    
+    protected void prepareStream(File file) {
+        inputFile = file;
+        inputURL = null;
+        try {
+            prepareStream(new BufferedInputStream(new FileInputStream(file)));
+        } catch (FileNotFoundException ex) {
+            LOG.log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    protected void prepareStream(URL url) {
+        inputFile = null;
+        inputURL = url;
+        try {
+            prepareStream(new BufferedInputStream(url.openStream()));
+        } catch (IOException ex) {
+            LOG.log(Level.SEVERE, null, ex);
+        }        
+    }
+	
+    @Override
+    public void close() {
+        stop();
+        
+        inputFile = null;
+        inputURL  = null;
         
         if (inputAudioStream != null) {
             try {
@@ -148,48 +197,5 @@ public abstract class SoundBasis implements AutoCloseable {
                 LOG.log(Level.SEVERE, null, ex);
             }
         }
-        
-        return this;
-    }
-    
-    protected void markStream() {    
-        if (inputAudioStream != null && inputAudioStream.markSupported()) {
-            inputAudioStream.mark(-1);
-        }
-    }
-    
-    protected void prepareStream() {
-        if (inputFile != null) {
-            prepareStream(inputFile);
-        }
-    }
-    
-    protected void prepareStream(InputStream stream) {
-        inputStream = stream;
-        inputAudioStream = SoundSystem.getEncodedAudioInputStream(stream);
-        markStream();   
-    }
-    
-    protected void prepareStream(File file) {
-        inputFile = file;
-        try {
-            prepareStream(new BufferedInputStream(new FileInputStream(file)));
-        } catch (FileNotFoundException ex) {
-            LOG.log(Level.SEVERE, null, ex);
-        }
-    }
-    
-    protected void prepareStream(URL url) {
-        inputFile = null;
-        try {
-            prepareStream(new BufferedInputStream(url.openStream()));
-        } catch (IOException ex) {
-            Logger.getLogger(SoundBasis.class.getName()).log(Level.SEVERE, null, ex);
-        }        
-    }
-	
-    @Override
-    public void close() {
-        stop();
     }
 }

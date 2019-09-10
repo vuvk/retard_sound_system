@@ -21,9 +21,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
-import java.util.Vector;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.sound.sampled.AudioFormat;
@@ -53,14 +55,14 @@ public final class SoundSystem {
     private static SourceDataLine MONO_LINE   = null;
     private static SourceDataLine STEREO_LINE = null;
     
-    private final static List<Sound> MONO_SOUNDS = new Vector<>();
-    private final static List<Sound> STEREO_SOUNDS = new Vector<>();
-    final static List<Music> MUSICS = new Vector<>();
+    private final static Set<Sound> MONO_SOUNDS = new HashSet<>();
+    private final static Set<Sound> STEREO_SOUNDS = new HashSet<>();
+    final static Set<Music> MUSICS = new HashSet<>();
     
-    private final static List<Sound> MONO_SOUNDS_FOR_ADD   = new Vector<>();
-    private final static List<Sound> STEREO_SOUNDS_FOR_ADD = new Vector<>();
-    private final static List<Sound> MONO_SOUNDS_FOR_DELETE   = new Vector<>();
-    private final static List<Sound> STEREO_SOUNDS_FOR_DELETE = new Vector<>();
+    private final static List<Sound> MONO_SOUNDS_FOR_ADD   = new ArrayList<>();
+    private final static List<Sound> STEREO_SOUNDS_FOR_ADD = new ArrayList<>();
+    private final static List<Sound> MONO_SOUNDS_FOR_DELETE   = new ArrayList<>();
+    private final static List<Sound> STEREO_SOUNDS_FOR_DELETE = new ArrayList<>();
     
     private static class SoundCache {
         private final byte[] buffer;
@@ -97,9 +99,9 @@ public final class SoundSystem {
             return bufferSize + 1;
         }
     }
-    private final static int CACHE_SIZE = 10240;
+    private final static int CACHE_SIZE = 2048;
     private final static SoundCache MONO_CACHE   = new SoundCache(CACHE_SIZE);
-    private final static SoundCache STEREO_CACHE = new SoundCache(CACHE_SIZE);
+    private final static SoundCache STEREO_CACHE = new SoundCache(CACHE_SIZE << 1);
         
     private SoundSystem() {}
     
@@ -111,6 +113,10 @@ public final class SoundSystem {
             }
             MONO_LINE.open(getAudioMonoFormat());
             MONO_LINE.start();
+            
+            // for init line
+            MONO_LINE.write(new byte[2], 0, 2);
+            MONO_LINE.drain();
         } catch (LineUnavailableException ex) {
             LOG.log(Level.SEVERE, null, ex);
         }
@@ -122,6 +128,10 @@ public final class SoundSystem {
             }
             STEREO_LINE.open(getAudioStereoFormat());
             STEREO_LINE.start();
+            
+            // for init line
+            STEREO_LINE.write(new byte[4], 0, 4);
+            STEREO_LINE.drain();
         } catch (LineUnavailableException ex) {
             LOG.log(Level.SEVERE, null, ex);
         }
@@ -181,9 +191,10 @@ public final class SoundSystem {
     
     static void playSound(Sound sound) {
         if (sound != null) {        
-            if (isPlaying(sound)) {
+            /*if (isPlaying(sound)) {
+                sound.rewind();
                 return;
-            }
+            }*/
 
             AudioFormat format = sound.getFormat();
             if (format != null) {
@@ -284,7 +295,7 @@ public final class SoundSystem {
      * @param sounds list of sounds in system (mono or stereo)
      * @param line line for write (mono or stereo)
      */
-    private static void updateLine(final List<Sound> sounds, final SourceDataLine line) {
+    private static void updateLine(final Set<Sound> sounds, final SourceDataLine line) {
         if (!sounds.isEmpty()) {            
             int channels = line.getFormat().getChannels();
             int bufferSize = (SoundSystem.SAMPLE_SIZE_IN_BITS >> 3) * channels;
@@ -339,7 +350,7 @@ public final class SoundSystem {
      * @param sounds list of sounds in system (mono or stereo)
      * @param line line for write (mono or stereo)
      */
-    private static void updateLine(final List<Sound> sounds, final SourceDataLine line, SoundCache cache) {
+    private static void updateLine(final Set<Sound> sounds, final SourceDataLine line, SoundCache cache) {
         if (!sounds.isEmpty()) {            
             int channels = line.getFormat().getChannels();
             int bufferSize = (SoundSystem.SAMPLE_SIZE_IN_BITS >> 3) * channels;
@@ -401,27 +412,27 @@ public final class SoundSystem {
     }
     
     private static void update() {        
-        if (MONO_LINE != null) {            
-            if (!MONO_SOUNDS_FOR_ADD.isEmpty()) {
-                MONO_SOUNDS.addAll(MONO_SOUNDS_FOR_ADD);
-                MONO_SOUNDS_FOR_ADD.clear();            
-            }        
+        if (MONO_LINE != null) {    
             if (!MONO_SOUNDS_FOR_DELETE.isEmpty()) {
                 MONO_SOUNDS.removeAll(MONO_SOUNDS_FOR_DELETE);
                 MONO_SOUNDS_FOR_DELETE.clear();            
+            }        
+            if (!MONO_SOUNDS_FOR_ADD.isEmpty()) {
+                MONO_SOUNDS.addAll(MONO_SOUNDS_FOR_ADD);
+                MONO_SOUNDS_FOR_ADD.clear();            
             }
             updateLine(MONO_SOUNDS, MONO_LINE, MONO_CACHE);
         }
         
         if (STEREO_LINE != null) {
-            if (!STEREO_SOUNDS_FOR_ADD.isEmpty()) {
-                STEREO_SOUNDS.addAll(STEREO_SOUNDS_FOR_ADD);
-                STEREO_SOUNDS_FOR_ADD.clear();
-            }     
             if (!STEREO_SOUNDS_FOR_DELETE.isEmpty()) {
                 STEREO_SOUNDS.removeAll(STEREO_SOUNDS_FOR_DELETE);
                 STEREO_SOUNDS_FOR_DELETE.clear();            
             }
+            if (!STEREO_SOUNDS_FOR_ADD.isEmpty()) {
+                STEREO_SOUNDS.addAll(STEREO_SOUNDS_FOR_ADD);
+                STEREO_SOUNDS_FOR_ADD.clear();
+            }     
             updateLine(STEREO_SOUNDS, STEREO_LINE, STEREO_CACHE);            
         }
     }

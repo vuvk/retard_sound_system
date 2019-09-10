@@ -51,7 +51,15 @@ public final class Sound extends SoundBasis {
     }
     
     public Sound(URL url) {
-        prepareStream(url);
+        this(url, false);
+    }
+    
+    public Sound(URL url, boolean precached) {             
+        if (precached) {
+            prepareStream(new SoundBuffer(url));
+        } else {
+            prepareStream(url);
+        }  
     }
     
     private void prepareStream(SoundBuffer buffer) {
@@ -68,8 +76,8 @@ public final class Sound extends SoundBasis {
 	
     @Override
     public Sound stop() {
+        super.stop();
         SoundSystem.stopSound(this);
-        setPlaying(false);        
         return this;
     }
 }

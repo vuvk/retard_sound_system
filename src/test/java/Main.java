@@ -75,9 +75,22 @@ public class Main {
         System.out.println("start sound system");
         SoundSystem.start();     
         
-        System.out.println("test mono line");
+        System.out.println("test mono line");  
         birdsMono.loop();
         Thread.sleep(3000);
+        
+        System.out.println("stop sound and retry play");
+        birdsMono.stop();
+        birdsMono.loop();
+        Thread.sleep(3000);
+        System.out.println("stop sound and retry play once again");
+        birdsMono.stop();
+        birdsMono.loop();
+        Thread.sleep(3000);
+        System.out.println("only retry play");
+        birdsMono.loop();
+        Thread.sleep(3000);
+        
         System.out.println("add rain - volume 0.3");
         raindropsMono.setVolume(0.3);
         raindropsMono.loop();

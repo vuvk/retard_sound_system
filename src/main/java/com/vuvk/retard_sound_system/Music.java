@@ -122,12 +122,14 @@ public final class Music extends SoundBasis {
             }
         }
     }
-        
+     
+    /*
     @Override
     protected void prepareStream() {
         super.prepareStream();
         prepareLine();
     }
+    */
     
     @Override
     protected void prepareStream(File file) {
