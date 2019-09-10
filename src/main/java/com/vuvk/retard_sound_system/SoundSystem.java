@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.sound.sampled.AudioFormat;
@@ -59,10 +60,10 @@ public final class SoundSystem {
     private final static Set<Sound> STEREO_SOUNDS = new HashSet<>();
     final static Set<Music> MUSICS = new HashSet<>();
     
-    private final static List<Sound> MONO_SOUNDS_FOR_ADD   = new ArrayList<>();
-    private final static List<Sound> STEREO_SOUNDS_FOR_ADD = new ArrayList<>();
-    private final static List<Sound> MONO_SOUNDS_FOR_DELETE   = new ArrayList<>();
-    private final static List<Sound> STEREO_SOUNDS_FOR_DELETE = new ArrayList<>();
+    private final static List<Sound> MONO_SOUNDS_FOR_ADD   = new Vector<>();
+    private final static List<Sound> STEREO_SOUNDS_FOR_ADD = new Vector<>();
+    private final static List<Sound> MONO_SOUNDS_FOR_DELETE   = new Vector<>();
+    private final static List<Sound> STEREO_SOUNDS_FOR_DELETE = new Vector<>();    
     
     private static class SoundCache {
         private final byte[] buffer;
@@ -74,8 +75,8 @@ public final class SoundSystem {
         
         public void add(byte value) {
             if (!isFull()) {
-                ++bufferSize;
-                buffer[bufferSize] = value;
+                //++bufferSize;
+                buffer[++bufferSize] = value;
             }
         }
         
@@ -146,13 +147,22 @@ public final class SoundSystem {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    while (MONO_LINE   != null &&
-                           STEREO_LINE != null &&
+                    while (MONO_LINE != null &&
                            isStarted()) {
-                        update();
+                        updateMonoLine();
                     }
                 }
-            }, "Retard SoundSystem Thread").start();
+            }, "RSS Update Mono Line Thread").start();
+            
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while (STEREO_LINE != null &&
+                           isStarted()) {
+                        updateStereoLine();
+                    }
+                }
+            }, "RSS Update Stereo Line Thread").start();
         }        
     }
     
@@ -190,12 +200,7 @@ public final class SoundSystem {
     }
     
     static void playSound(Sound sound) {
-        if (sound != null) {        
-            /*if (isPlaying(sound)) {
-                sound.rewind();
-                return;
-            }*/
-
+        if (sound != null/* && !isPlaying(sound)*/) {  
             AudioFormat format = sound.getFormat();
             if (format != null) {
                 int channels = format.getChannels();
@@ -209,7 +214,7 @@ public final class SoundSystem {
     }
     
     static void stopSound(Sound sound) {
-        if (sound != null) {        
+        if (sound != null/* && isPlaying(sound)*/) {        
             AudioFormat format = sound.getFormat();
             if (format != null) {
                 int channels = format.getChannels();
@@ -298,7 +303,7 @@ public final class SoundSystem {
     private static void updateLine(final Set<Sound> sounds, final SourceDataLine line) {
         if (!sounds.isEmpty()) {            
             int channels = line.getFormat().getChannels();
-            int bufferSize = (SoundSystem.SAMPLE_SIZE_IN_BITS >> 3) * channels;
+            int bufferSize = (SAMPLE_SIZE_IN_BITS >> 3) * channels;
             
             double[] mixer = new double [bufferSize >> 1];
             int[]  counter = new int [bufferSize];
@@ -340,7 +345,11 @@ public final class SoundSystem {
                 }
                 
                 // отправляем в звуковую карту
-                line.write(result, 0, bufferSize);    
+                line.write(result, 0, result.length);    
+            }
+            
+            if (line.available() >= SAMPLE_RATE * channels) {
+                line.drain();
             }
         }
     }
@@ -353,7 +362,7 @@ public final class SoundSystem {
     private static void updateLine(final Set<Sound> sounds, final SourceDataLine line, SoundCache cache) {
         if (!sounds.isEmpty()) {            
             int channels = line.getFormat().getChannels();
-            int bufferSize = (SoundSystem.SAMPLE_SIZE_IN_BITS >> 3) * channels;
+            int bufferSize = (SAMPLE_SIZE_IN_BITS >> 3) * channels;
             
             double[] mixer = new double [bufferSize >> 1];
             int[]  counter = new int [bufferSize];
@@ -405,13 +414,16 @@ public final class SoundSystem {
                 }
             } else if (!cache.isEmpty()) {
                 line.write(cache.getBuffer(), 0, cache.getBufferSize());
-                //line.drain();
-                cache.reset();           
+                cache.reset();
+            }
+            
+            if (line.available() >= SAMPLE_RATE * channels) {
+                line.drain();
             }
         }
     }
     
-    private static void update() {        
+    private static void updateMonoLine() {        
         if (MONO_LINE != null) {    
             if (!MONO_SOUNDS_FOR_DELETE.isEmpty()) {
                 MONO_SOUNDS.removeAll(MONO_SOUNDS_FOR_DELETE);
@@ -423,7 +435,9 @@ public final class SoundSystem {
             }
             updateLine(MONO_SOUNDS, MONO_LINE, MONO_CACHE);
         }
-        
+    }
+    
+    private static void updateStereoLine() {        
         if (STEREO_LINE != null) {
             if (!STEREO_SOUNDS_FOR_DELETE.isEmpty()) {
                 STEREO_SOUNDS.removeAll(STEREO_SOUNDS_FOR_DELETE);
