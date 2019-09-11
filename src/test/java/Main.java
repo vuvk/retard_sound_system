@@ -1,5 +1,3 @@
-
-
 /**
     Copyright 2019 Anton "Vuvk" Shcherbatykh
 
@@ -32,23 +30,23 @@ import java.util.logging.Logger;
  */
 public class Main {     
     /* from folder */
-    final static Sound birdsMono     = new Sound("birds_mono.wav");
-    final static Sound thunderMono   = new Sound("thunder_mono.wav", true);
-    final static Sound raindropsMono = new Sound("rain_mono.wav");
+    static Sound birdsMono     = new Sound("birds_mono.wav");
+    static Sound thunderMono   = new Sound("thunder_mono.wav", true);
+    static Sound raindropsMono = new Sound("rain_mono.wav");
 
-    final static Sound birdsStereo     = new Sound("birds_stereo.wav", true);
-    final static Sound thunderStereo   = new Sound("thunder_stereo.wav");
-    final static SoundBuffer raindropsStereoBuffer = new SoundBuffer("rain_stereo.wav");
-    final static Sound raindropsStereo = new Sound(raindropsStereoBuffer);
+    static Sound birdsStereo     = new Sound("birds_stereo.wav", true);
+    static Sound thunderStereo   = new Sound("thunder_stereo.wav");
+    static SoundBuffer raindropsStereoBuffer = new SoundBuffer("rain_stereo.wav");
+    static Sound raindropsStereo = new Sound(raindropsStereoBuffer);
     
-    final static Music ogg = new Music("music.ogg");  
-    final static Music mp3 = new Music("music.mp3");
+    static Music ogg = new Music("music.ogg");  
+    static Music mp3 = new Music("music.mp3");
     
     /* from jar */
-    final static Sound resSound = new Sound(Main.class.getResource("/test_sounds/birds_mono.wav"));
-    final static SoundBuffer resSoundBuffer = new SoundBuffer(Main.class.getResource("/test_sounds/birds_mono.wav"));
-    final static Sound resSoundBuffered = new Sound(resSoundBuffer);
-    final static Music resMusic = new Music(Main.class.getResource("/test_sounds/music.mp3"));   
+    static Sound resSound = new Sound(Main.class.getResource("/test_sounds/birds_mono.wav"));
+    static SoundBuffer resSoundBuffer = new SoundBuffer(Main.class.getResource("/test_sounds/birds_mono.wav"));
+    static Sound resSoundBuffered = new Sound(resSoundBuffer);
+    static Music resMusic = new Music(Main.class.getResource("/test_sounds/music.mp3"));   
     
     /* from INET */
     static Sound urlSound;
@@ -73,7 +71,7 @@ public class Main {
     public static void main(String[] args) throws InterruptedException {
         
         System.out.println("start sound system");
-        SoundSystem.start();     
+        SoundSystem.start();
         
         System.out.println("test mono line");  
         birdsMono.loop();
@@ -81,7 +79,7 @@ public class Main {
         
         System.out.println("stop sound and retry play");
         birdsMono.stop();
-        birdsMono.loop();
+        birdsMono.play();
         Thread.sleep(3000);
         System.out.println("stop sound and retry play once again");
         birdsMono.stop();
