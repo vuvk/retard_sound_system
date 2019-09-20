@@ -25,7 +25,7 @@ import java.util.logging.Logger;
 
 public final class Sound extends SoundBasis {  
     private static final Logger LOG = Logger.getLogger(Sound.class.getName());
-    
+        
     public Sound(SoundBuffer buffer) {
         prepareStream(buffer);
     }

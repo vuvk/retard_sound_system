@@ -1,3 +1,5 @@
+
+
 /**
     Copyright 2019 Anton "Vuvk" Shcherbatykh
 
@@ -72,6 +74,7 @@ public class Main {
         
         System.out.println("start sound system");
         SoundSystem.start();
+        //Thread.sleep(3000);
         
         System.out.println("test mono line");  
         birdsMono.loop();
@@ -102,7 +105,8 @@ public class Main {
         System.out.println("stop mono line");
         birdsMono.stop();
         thunderMono.stop();
-        raindropsMono.stop();
+        raindropsMono.stop();        
+        
         System.out.println("test stereo line");
         birdsStereo.loop();
         Thread.sleep(3000);
@@ -120,6 +124,7 @@ public class Main {
         birdsStereo.stop();
         thunderStereo.stop();
         raindropsStereo.stop();
+
         System.out.print("try play ogg (volume 0.7)...");
         ogg.setVolume(0.7);
         ogg.play();
@@ -128,7 +133,7 @@ public class Main {
         System.out.println("stop!");
         System.out.println("try play mp3 in loop (volume 0.3)...");
         mp3.loop();
-        mp3.setVolume(0.3);        
+        mp3.setVolume(0.3);
         Thread.sleep(5000);
         System.out.println("set mp3 volume to 1.0");
         mp3.setVolume(1.0);

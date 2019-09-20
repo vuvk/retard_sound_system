@@ -18,16 +18,13 @@ package com.vuvk.retard_sound_system;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
-import javax.sound.sampled.Control;
 
 /**
  *
@@ -71,8 +68,9 @@ public final class Music extends SoundBasis {
                        line             != null && 
                        isPlaying()) {
                     
-                    int cnt = 0;                    
-                    Arrays.fill(buffer, (byte)0);
+                    long prev = System.nanoTime(); 
+                    
+                    int cnt = 0;                   
                     
                     if ((cnt = read(buffer)) != -1) {
                         // apply volume
@@ -91,6 +89,13 @@ public final class Music extends SoundBasis {
                     } else {
                         break;
                     }
+                    
+                    long delta = System.nanoTime() - prev;
+                    if (delta < 90) {
+                        try {
+                            Thread.sleep(0, (int) (90 - delta));
+                        } catch (InterruptedException ignored) {}
+                    }
                 }
 
                 if (isLooping()) {
@@ -99,7 +104,7 @@ public final class Music extends SoundBasis {
                     stop();
                 }
             }
-        }).start();
+        }, "RSS Update Music Thread").start();
         
         return this;
     }
@@ -108,18 +113,12 @@ public final class Music extends SoundBasis {
         if (inputAudioStream != null) {
             AudioFormat format = inputAudioStream.getFormat();
 
-            final DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
-
             try {
-                line = (SourceDataLine) AudioSystem.getLine(info);
-                Control[] controls = line.getControls();
-                for (Control control : controls) {
-                    System.out.println(control);
-                }
+                line = AudioSystem.getSourceDataLine(format);
                 line.open(format);
                 line.start();
             } catch (LineUnavailableException ex) {
-                Logger.getLogger(Music.class.getName()).log(Level.SEVERE, null, ex);
+                LOG.log(Level.SEVERE, null, ex);
             }
         }
     }

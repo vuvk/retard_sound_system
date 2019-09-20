@@ -31,7 +31,7 @@ import javax.sound.sampled.AudioInputStream;
  *
  * @author vuvk
  */
-public abstract class SoundBasis implements AutoCloseable {
+abstract class SoundBasis implements AutoCloseable {
     private static final Logger LOG = Logger.getLogger(SoundBasis.class.getName());   
     
     protected URL  inputURL = null;
@@ -86,8 +86,8 @@ public abstract class SoundBasis implements AutoCloseable {
     }
     
     int read(byte[] buffer) {
-        if (inputAudioStream != null) {
-            try {
+        if (inputAudioStream != null) {            
+            try {                
                 int readed = inputAudioStream.read(buffer);
                 if (readed > 0) {
                     inputAudioStreamPosition += readed;
@@ -101,12 +101,29 @@ public abstract class SoundBasis implements AutoCloseable {
         return -1;
     }
     
+    long skip(long bytes) {
+        if (inputAudioStream != null) {
+            try {
+                long skipped = inputAudioStream.skip(bytes);
+                if (skipped > 0) {
+                    inputAudioStreamPosition += skipped;
+                }
+                return skipped;
+            } catch (IOException ex) {
+                LOG.log(Level.SEVERE, null, ex);
+            }
+        }
+        
+        return 0;        
+    }
+    
     public SoundBasis play() {
         return play(false);
     }
     
     public SoundBasis play(final boolean looping) {
         if (inputAudioStreamPosition > 0) {
+            stop();
             rewind();
         }
         setLooping(looping);
@@ -119,15 +136,15 @@ public abstract class SoundBasis implements AutoCloseable {
         return play(true);
     }    
     
-    public SoundBasis rewind() {           
+    public SoundBasis rewind() {        
         if (inputFile != null) {
             prepareStream(inputFile);
         } else if (inputURL != null) {
             prepareStream(inputURL);
-        } else if (inputAudioStream != null && inputAudioStream.markSupported()) {
+        } else if (inputAudioStream != null/* && inputAudioStream.markSupported()*/) {
             try {
-                inputAudioStreamPosition = 0;
                 inputAudioStream.reset();
+                inputAudioStreamPosition = 0;
             } catch (IOException ex) {
                 LOG.log(Level.SEVERE, null, ex);
             }
@@ -143,12 +160,12 @@ public abstract class SoundBasis implements AutoCloseable {
     }
     
     protected void markStream() {    
-        if (inputAudioStream != null && inputAudioStream.markSupported()) {
-            inputAudioStream.mark(-1);
+        if (inputAudioStream != null) {
+            inputAudioStream.mark(0);
         }
     }
     
-    protected void prepareStream(AudioInputStream stream) {
+    protected void prepareStream(AudioInputStream stream) {        
         inputAudioStream = stream;
         markStream();
         audioFormat = inputAudioStream.getFormat();
@@ -163,6 +180,7 @@ public abstract class SoundBasis implements AutoCloseable {
     protected void prepareStream(File file) {
         inputFile = file;
         inputURL = null;
+        closeStream();
         try {
             prepareStream(new BufferedInputStream(new FileInputStream(file)));
         } catch (FileNotFoundException ex) {
@@ -173,23 +191,16 @@ public abstract class SoundBasis implements AutoCloseable {
     protected void prepareStream(URL url) {
         inputFile = null;
         inputURL = url;
+        closeStream();
         try {
             prepareStream(new BufferedInputStream(url.openStream()));
         } catch (IOException ex) {
             LOG.log(Level.SEVERE, null, ex);
         }        
     }
-	
-    @Override
-    public void close() {
-        stop();
-        
-        inputFile = null;
-        inputURL  = null;
+    
+    protected void closeStream() {
         inputAudioStreamPosition = 0;
-        channels = 0;
-        audioFormat = null;
-        
         if (inputAudioStream != null) {
             try {
                 inputAudioStream.close();
@@ -198,5 +209,16 @@ public abstract class SoundBasis implements AutoCloseable {
                 LOG.log(Level.SEVERE, null, ex);
             }
         }
+    }
+	
+    @Override
+    public void close() {
+        stop();
+        closeStream();
+        
+        inputFile = null;
+        inputURL  = null;
+        channels = 0;
+        audioFormat = null;        
     }
 }
