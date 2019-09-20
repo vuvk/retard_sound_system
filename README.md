@@ -10,6 +10,9 @@ Features
 
 Intentionally it used old Java 7 standard.
 
+-----
+You can use variables SoundSystem.CACHED (default:true) and SoundSystem.FAST_MODE (default:false) for control the quality and speed of the sound system.
+
 Demo
 -----
 https://www.youtube.com/watch?v=r5YJZWikRUc
